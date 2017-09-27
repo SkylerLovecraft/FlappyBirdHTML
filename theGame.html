@@ -1,0 +1,685 @@
+
+<head>
+	<title>Flappy bird port to the interweb!</title>
+	<meta charset="UTF-8">
+</head>
+<body>
+<br>
+<canvas id="myCanvas" width="500" height="500" style="border:1px solid #cccccc;"></canvas>
+
+<script type="text/javascript">
+
+//energy when calling chuck
+//fix the score
+var sprites = [];
+
+function Model()
+{
+	this.bird = new Bird();
+	sprites.push(this.bird);
+	this.tube = new Tube();
+	sprites.push(this.tube);
+	this.hand = new Hand(this.bird);
+	var frames;
+	this.frames = 0;
+}
+
+Model.prototype.update = function()
+{
+	//this.bird.update();
+	//this.tube.update();
+	this.spriteLength = sprites.length;
+	for(i = 0; i < this.spriteLength; ++i)
+	{
+		sprites[i].update();
+		if(sprites[i].x < -50 || sprites[i].y > 700)
+			sprites.splice(i, 1);
+	}
+	++this.frames;
+	if(this.frames > 35)
+	{
+		this.frames = 0;
+		this.temporaryTube = new Tube();
+		sprites.push(this.temporaryTube);
+	}
+}
+Model.prototype.collisionDetection = function()
+{
+	this.spriteLength = sprites.length;
+	for(i = 0; i < this.spriteLength; ++i)
+	{
+		if(sprites[i].isBird())
+		{
+			for(j = 0; j < this.spriteLength; ++j)
+			{
+				if(j != i)
+				{
+					if(this.doesCollideWith(i,j) && sprites[j].isTube() && this.bird.getInvincibility() == false)
+					{
+						this.bird.grantInvincibility(false);
+					}
+						if(!this.doesCollideWith(i,j) && sprites[j].isTube())
+						{
+							if(this.scoreCheck(i,j))
+							{
+								console.log("yay i made to tha beginning");
+								this.bird.scored();
+								console.log("yay i scored");
+								break;
+							}
+						}
+				}
+			}
+		}
+	}
+	for(i = 0; i < this.spriteLength; ++i)
+	{
+		if(sprites[i].isChuck())
+		{
+			for(j = 0; j < this.spriteLength; ++j)
+			{
+				if(j != i)
+				{
+					if(this.doesCollideWith(i,j) && sprites[j].isTube())
+					{
+						sprites[j].horizontalVelocity = sprites[i].horizontalVelocity;
+						sprites[i].activator = true;
+						sprites[j].activator = true;
+					}
+
+				}
+			}
+		}
+	}
+}
+Model.prototype.doesCollideWith = function(i,j)
+{
+	if(sprites[i].x + sprites[i].getWidth() < sprites[j].x)
+		return false;
+	else if(sprites[i].x > sprites[j].x + sprites[j].getWidth())
+		return false;
+	else if(sprites[i].y + sprites[i].getHeight() < sprites[j].y)
+		return false;
+	else if(sprites[i].y > sprites[j].y + sprites[j].getHeight())
+		return false;
+	return true;
+}
+Model.prototype.scoreCheck = function(i,j)
+{
+	if(sprites[j].x < 20)
+	{
+		if(sprites[i].x > sprites[j].x + sprites[j].getWidth() && sprites[i].y > sprites[j].y + sprites[j].getHeight())
+		{
+			return true;
+		}
+		else if(sprites[i].x > sprites[j].x + sprites[j].getWidth() && sprites[i].y < sprites[j].y)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+Model.prototype.onClick = function()
+{
+	this.bird.flap();
+	console.log("clicked");
+}
+Model.prototype.onRightClick = function()
+{
+	this.temporaryChuck = new Chuck();
+	sprites.push(this.temporaryChuck);
+	//this.bird.flap();
+	this.bird.modifyEnergy(-1);
+	console.log("rightclicked");
+}
+
+
+
+function View(model)
+{
+	var score;
+	var dead;
+	var backgroundCounter;
+	var bgx;
+	this.bgx = 0;
+	this.backgroundCounter = 0;
+	this.model = model;
+	this.canvas = document.getElementById("myCanvas");
+	this.energy0 = new Image();
+	this.energy0.src = "energy_0.png";
+	this.energy1 = new Image();
+	this.energy1.src = "energy_1.png";
+	this.energy2 = new Image();
+	this.energy2.src = "energy_2.png";
+	this.energy3 = new Image();
+	this.energy3.src = "energy_3.png";
+	this.energy4 = new Image();
+	this.energy4.src = "energy_4.png";
+	this.energy5 = new Image();
+	this.energy5.src = "energy_5.png";
+	this.energy6 = new Image();
+	this.energy6.src = "energy_6.png";
+	this.energy7 = new Image();
+	this.energy7.src = "energy_7.png";
+	this.energy8 = new Image();
+	this.energy8.src = "energy_8.png";
+	this.energy9 = new Image();
+	this.energy9.src = "energy_9.png";
+	this.energy10 = new Image();
+	this.energy10.src = "energy_10.png";
+	this.background = new Image();
+	this.background.src = "background.png";
+}
+
+View.prototype.update = function()
+{
+	this.score = this.model.bird.getScore();
+	let ctx = this.canvas.getContext("2d");
+	ctx.clearRect(0, 0, 500, 500);
+	++this.backgroundCounter;
+	if(this.backgroundCounter > 1)
+	{
+		--this.bgx;
+		this.backgroundCounter = 0;
+	}
+	ctx.drawImage(this.background, this.bgx, 0);
+	this.spriteLength = sprites.length;
+	for(i = 0; i < this.spriteLength; ++i)
+	{
+		sprites[i].draw(this.canvas);
+	}
+	birdEnergy = this.model.bird.getEnergy();
+	if(birdEnergy == 0)
+		ctx.drawImage(this.energy0, 300, 0);
+	if(birdEnergy == 1)
+		ctx.drawImage(this.energy1, 300, 0);
+	if(birdEnergy == 2)
+		ctx.drawImage(this.energy2, 300, 0);
+	if(birdEnergy == 3)
+		ctx.drawImage(this.energy3, 300, 0);
+	if(birdEnergy == 4)
+		ctx.drawImage(this.energy4, 300, 0);
+	if(birdEnergy == 5)
+		ctx.drawImage(this.energy5, 300, 0);
+	if(birdEnergy == 6)
+		ctx.drawImage(this.energy6, 300, 0);
+	if(birdEnergy == 7)
+		ctx.drawImage(this.energy7, 300, 0);
+	if(birdEnergy == 8)
+		ctx.drawImage(this.energy8, 300, 0);
+	if(birdEnergy == 9)
+		ctx.drawImage(this.energy9, 300, 0);
+	if(birdEnergy == 10)
+		ctx.drawImage(this.energy10, 300, 0);
+	if(birdEnergy != 0)
+		this.dead = false;
+	if(birdEnergy == 0)
+		this.dead = true;
+
+	if(this.dead)
+	{
+		this.model.hand.update();
+		this.model.hand.draw(this.canvas);		
+	}
+	//Score crap
+	var scoreString = this.score.toString();
+	ctx.font="20px Arial";
+	ctx.fillText(scoreString,450,450);
+}
+
+
+
+
+
+function Controller(model, view)
+{
+	this.model = model;
+	this.view = view;
+	let self = this;
+	view.canvas.addEventListener("click", function(event) { self.onClick(event); });
+	view.canvas.addEventListener("contextmenu", function(event) { event.preventDefault(); self.onRightClick(event);return false;}, false);
+
+}
+
+Controller.prototype.onClick = function(event)
+{
+	this.model.onClick();
+}
+Controller.prototype.onRightClick = function(event)
+{
+	this.event = event;
+	this.model.onRightClick();
+	return false;
+}
+function Bird()
+{
+	var flapFrames;
+	var invincibilityFrames;
+	var x;
+	var y;
+	var energy;
+	var score;
+	var verticalVelocity;
+
+	this.ACELLERATION_FACTOR = 0.8;
+	this.FLAP_FACTOR = -13.0;
+	this.flapFrames = 0;
+	this.invincibilityFrames = 0;
+	this.x = 10;
+	this.y = 0;
+	this.energy = 10;
+	this.score = 0;
+	this.verticalVelocity = 0.0;
+
+	this.bird1 = new Image();
+	this.bird1.src = "frame-1.png";
+	this.bird2 = new Image();
+	this.bird2.src = "frame-2.png";
+	this.bird3 = new Image();
+	this.bird3.src = "frame-3.png";
+	this.bird4 = new Image();
+	this.bird4.src = "frame-4.png";
+	this.deadBird = new Image();
+	this.deadBird.src = "dead.png";
+}
+Bird.prototype.isCollideable = function()
+{
+	if(this.energy!= 0 && this. invincibilityFrames == 0)
+		return true;
+	return false;
+}
+Bird.prototype.update = function()
+{
+	if(this.energy != 0)
+	{
+		if(this.invincibilityFrames > 0)
+			--this.invincibilityFrames;
+
+		if(this.flapFrames > 0)
+			--this.flapFrames;
+		if(this.y <= 460)
+		{
+			if(this.y += this.verticalVelocity < 460)
+			{
+				this.y += this.verticalVelocity;
+				this.verticalVelocity += this.ACELLERATION_FACTOR;
+			}
+		}
+	}
+
+	if(this.y < -10)
+	{
+		this.verticalVelocity = 0.0;
+		this.y = -10;
+	}
+	if(this.y > 460 && this.energy != 0)
+	{
+		this.verticalVelocity = 0.0;
+		this.y = 460;
+	}
+}
+Bird.prototype.draw = function(canvas)
+{
+	this.canvas = canvas;
+	let ctx = this.canvas.getContext("2d");
+	if(this.energy != 0)
+	{
+		if(this.getFrameCount() <= 1)
+		{
+			ctx.drawImage(this.bird1, this.x, this.y);
+		}
+		else if(this.getFrameCount() > 8 && this.getFrameCount() <= 10)
+		{
+			ctx.drawImage(this.bird2, this.x, this.y);
+		}
+		else if(this.getFrameCount() > 6 && this.getFrameCount() <= 8)
+		{
+			ctx.drawImage(this.bird3, this.x, this.y);
+		}
+		else if(this.getFrameCount() > 1 && this.getFrameCount() <= 6)
+		{
+			ctx.drawImage(this.bird4, this.x, this.y);
+		}
+	}
+	if(this.energy == 0)
+	{
+		ctx.drawImage(this.deadBird, this.x, this.y)
+	}
+}
+Bird.prototype.flap = function()
+{
+	this.flapFrames = 10;
+	this.verticalVelocity = 0.0;
+	this.verticalVelocity += this.FLAP_FACTOR;
+}
+Bird.prototype.getFrameCount = function()
+{
+	return this.flapFrames;
+}
+Bird.prototype.getX = function()
+{
+	return this.x;
+}
+Bird.prototype.getY = function()
+{
+	return this.y;
+}
+Bird.prototype.moveTheBird = function(y)
+{
+	this.y += y;
+}
+Bird.prototype.getEnergy = function()
+{
+	return this.energy;
+}
+Bird.prototype.modifyEnergy = function(x)
+{
+	if(this.energy != 0)
+		this.energy += x;
+}
+Bird.prototype.scored = function()
+{
+	if(this.energy != 0)
+	{
+		console.log("in the score");
+		this.score += 1;
+		if(this.score % 5 == 0 && this.energy <= 9 && this.energy >= 1)
+			++this.energy;
+		this.grantInvincibility(true);
+	}
+}
+
+Bird.prototype.getScore = function()
+{
+	return this.score;
+}
+Bird.prototype.grantInvincibility = function(b)
+{
+	if(!b)
+		--this.energy;
+	this.invincibilityFrames = 30;
+}
+Bird.prototype.getInvincibility = function()
+{
+	if(this.invincibilityFrames > 0)
+		return true;
+	return false;
+}
+Bird.prototype.isTube = function()
+{
+	return false;
+}
+Bird.prototype.isBird = function()
+{
+	return true;
+}
+Bird.prototype.isChuck = function()
+{
+	return false;
+}
+Bird.prototype.getHeight = function()
+{
+	return this.bird1.height;
+}
+Bird.prototype.getWidth = function()
+{
+	return this.bird1.width;
+}
+function Chuck()
+{
+	ACELLERATION_FACTOR = 0.4;
+	var activator;
+	var x, y;
+	var verticalVelocity, horizontalVelocity;
+	this.chuckImage = new Image();
+	this.chuckImage.src = "chuckImage.png";
+	this.x = -30;
+	this.y = 250;
+	this.verticalVelocity = -10;
+	this.horizontalVelocity = 15;
+	this.activator = false;
+}
+Chuck.prototype.update = function()
+{
+	if(!this.activator)
+	{
+		this.x += this.horizontalVelocity;
+		this.y += this.verticalVelocity;
+		this.verticalVelocity != this.ACELLERATION_FACTOR;
+	}
+	if(this.activator)
+	{
+		this.x -= this.horizontalVelocity;
+		this.y -= this.verticalVelocity;
+	}
+	this.x = this.getX();
+	this.y = this.getY();
+}
+Chuck.prototype.draw = function(hfjkdslahfjkldsahfjklsdhfjkldsa)
+{
+	this.hfjkdslahfjkldsahfjklsdhfjkldsa = hfjkdslahfjkldsahfjklsdhfjkldsa;
+	let ctx = this.hfjkdslahfjkldsahfjklsdhfjkldsa.getContext("2d");
+	ctx.drawImage(this.chuckImage, this.x, this.y);
+}
+Chuck.prototype.getX = function()
+{
+	return this.x;
+}
+Chuck.prototype.getY = function()
+{
+	return this.y;
+}
+Chuck.prototype.isTube = function()
+{
+	return false;
+}
+Chuck.prototype.isBird = function()
+{
+	return false;
+}
+Chuck.prototype.isChuck = function()
+{
+	return true;
+}
+Chuck.prototype.activate = function()
+{
+	this.activator = true;
+}
+Chuck.prototype.getHeight = function()
+{
+	return this.chuckImage.height;
+}
+Chuck.prototype.getWidth = function()
+{
+	return this.chuckImage.width;
+}
+Chuck.prototype.score = function()
+{
+	return;
+}
+function Hand(bird)
+{
+	this.bird = bird;
+	var x, y, dest_x, dest_y, status, offScreen;
+	this.status = true;
+	this.offScreen = false;
+	this.x = 510;
+	this.y = 510;
+	this.reachingUp = new Image();
+	this.reachingUp.src = "hand1.png";
+	this.pullingDown = new Image();
+	this.pullingDown.src = "hand2.png";
+}
+
+Hand.prototype.update = function()
+{
+	if(this.bird.energy == 0)
+	{
+		if(this.status)
+		{
+			if(this.x != this.bird.x)
+			{
+				if(this.y - this.bird.y < 5)
+					this.y = this.bird.y;
+				this.x -= 5;
+			}
+			if(this.y != this.bird.y)
+			{
+				if(this.y - this.bird.y < 5)
+					this.y = this.bird.y;
+				this.y -= 5;
+			}
+		}
+
+		if(this.x == this.bird.x && this.y == this.bird.y)
+		{
+			this.status = false;
+		}
+		if(!this.status)
+		{
+			this.bird.moveTheBird(5);
+			this.y += 5;
+			this.bird.update();
+		}
+	}
+
+	if(this.bird.y > 550)
+	{
+		this.offScreen = true;
+	}
+}
+Hand.prototype.draw = function(canvas)
+{
+	this.canvas = canvas;
+	let ctx = this.canvas.getContext("2d");
+	if(this.status)
+	{
+		ctx.drawImage(this.reachingUp, this.x, this.y);
+	}
+	if(!this.status)
+	{
+		ctx.drawImage(this.pullingDown, this.x, this.y);
+	}
+
+}
+Hand.prototype.reachingUp = function()
+{
+	return this.status;
+}
+
+Hand.prototype.pullingDown = function()
+{
+	return !this.status;
+}
+function Tube()
+{
+	var direction;
+	var x;
+	var y;
+	var activator;
+	var horizontalVelocity;
+	this.x = 510;
+	this.direction = this.generateBool();
+	this.generate(this.direction);
+	this.activator = false;
+	this.currentImage = null;
+
+	
+	this.tubeDown = new Image();
+	this.tubeDown.src = "tube_down.png";
+	this.tubeUp = new Image();
+	this.tubeUp.src = "tube_up.png";
+	if(this.getDirection)
+		this.currentImage = this.tubeDown;
+	else
+		this.currentImage = this.tubeUp;
+}
+Tube.prototype.update = function()
+{
+	if(!this.activator)
+		this.x -= 10;
+	if(this.activator)
+		this.x += this.horizontalVelocity;
+}
+Tube.prototype.draw = function(canvas)
+{
+	this.canvas = canvas;
+	let ctx = this.canvas.getContext("2d");
+	if(this.getDirection())
+		ctx.drawImage(this.tubeDown, this.x, this.y);
+	else if(!this.getDirection())
+		ctx.drawImage(this.tubeUp, this.x, this.y);
+		
+}
+Tube.prototype.generateBool = function()
+{
+	if(Math.floor(Math.random() * 2))
+	{
+		return true;
+	}
+	return false;
+}
+Tube.prototype.generate = function(b)
+{
+	if(b)
+		this.y = Math.random() * (-60 + 380) -380;
+	else
+		this.y = Math.random() * (460 - 100) + 100;
+}
+Tube.prototype.getDirection = function()
+{
+	return this.direction;
+}
+Tube.prototype.isTube = function()
+{
+	return true;
+}
+Tube.prototype.isBird = function()
+{
+	return false;
+}
+Tube.prototype.isChuck = function()
+{
+	return false;
+}
+Tube.prototype.activate = function()
+{
+	this.activator = true;
+}
+Tube.prototype.getHeight = function()
+{
+	return this.currentImage.height;
+}
+Tube.prototype.getWidth = function()
+{
+	return this.currentImage.width;
+}
+Tube.prototype.score = function()
+{
+	return;
+}
+function Game()
+{
+	this.model = new Model();
+	this.view = new View(this.model);
+	this.controller = new Controller(this.model, this.view);
+}
+
+Game.prototype.onTimer = function()
+{
+	if(this.model.hand.offScreen == false)
+	{
+		this.model.update();
+		this.view.update();
+		this.model.collisionDetection();
+	}
+}
+
+
+
+let game = new Game();
+let timer = setInterval(function() { game.onTimer(); }, 30);
+
+</script>
+
+</body>
